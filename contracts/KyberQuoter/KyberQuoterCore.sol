@@ -8,7 +8,6 @@ import './interfaces/IKyberPool.sol';
 import './lib/SwapMath.sol';
 import './lib/SafeCast.sol';
 
-
 contract KyberQuoterCore {
     using SafeCast for uint256;
     using SafeCast for int128;
@@ -47,8 +46,7 @@ contract KyberQuoterCore {
             {
                 uint160 targetSqrtP = swapData.nextSqrtP;
                 // ensure next sqrtP (and its corresponding tick) does not exceed price limit
-                if (willUpTick == (swapData.nextSqrtP > sqrtPriceLimitX96))
-                    targetSqrtP = sqrtPriceLimitX96;
+                if (willUpTick == (swapData.nextSqrtP > sqrtPriceLimitX96)) targetSqrtP = sqrtPriceLimitX96;
 
                 int256 usedAmount;
                 int256 returnedAmount;
@@ -78,8 +76,7 @@ contract KyberQuoterCore {
 
             swapData.currentTick = willUpTick ? tempNextTick : tempNextTick - 1;
             // if tempNextTick is not next initialized tick
-            if (tempNextTick != swapData.nextTick)
-                continue;
+            if (tempNextTick != swapData.nextTick) continue;
             (swapData.baseL, swapData.nextTick) = _updateLiquidityAndCrossTick(
                 poolAddress,
                 swapData.nextTick,
@@ -91,30 +88,18 @@ contract KyberQuoterCore {
         (amount0, amount1) = zeroForOne
             ? (amountSpecified - swapData.specifiedAmount, swapData.returnedAmount)
             : (swapData.returnedAmount, amountSpecified - swapData.specifiedAmount);
-
     }
 
     function getInitialSwapData(
         address poolAddress,
         bool willUpTick
-    ) internal view returns (
-        uint128 baseL,
-        uint128 reinvestL,
-        uint160 sqrtP,
-        int24 currentTick,
-        int24 nextTick
-    ) {
-        (sqrtP, currentTick, nextTick,) = IKyberPool(poolAddress).getPoolState();
-        (baseL, reinvestL,) = IKyberPool(poolAddress).getLiquidityState();
-        if (willUpTick)
-            nextTick = getNextInitializedTick(poolAddress, nextTick);
+    ) internal view returns (uint128 baseL, uint128 reinvestL, uint160 sqrtP, int24 currentTick, int24 nextTick) {
+        (sqrtP, currentTick, nextTick, ) = IKyberPool(poolAddress).getPoolState();
+        (baseL, reinvestL, ) = IKyberPool(poolAddress).getLiquidityState();
+        if (willUpTick) nextTick = getNextInitializedTick(poolAddress, nextTick);
     }
 
-    function checkSqrtPriceLimitWithinAllowed(
-        bool willUpTick,
-        uint160 sqrtPriceLimit, 
-        uint160 sqrtP
-    ) internal pure {
+    function checkSqrtPriceLimitWithinAllowed(bool willUpTick, uint160 sqrtPriceLimit, uint160 sqrtP) internal pure {
         bool withinAllowed = willUpTick
             ? sqrtPriceLimit > sqrtP && sqrtPriceLimit < TickMath.MAX_SQRT_RATIO
             : sqrtPriceLimit < sqrtP && sqrtPriceLimit > TickMath.MIN_SQRT_RATIO;
@@ -122,8 +107,8 @@ contract KyberQuoterCore {
     }
 
     function getTempNextTick(
-        int24 currentTick, 
-        int24 nextTick, 
+        int24 currentTick,
+        int24 nextTick,
         bool willUpTick
     ) internal pure returns (int24 tempNextTick) {
         // math calculations work with the assumption that the price diff is capped to 5%
@@ -143,11 +128,11 @@ contract KyberQuoterCore {
         uint128 currentLiquidity,
         bool willUpTick
     ) internal view returns (uint128 newLiquidity, int24 newNextTick) {
-        (,int128 liquidityNet,,) = IKyberPool(poolAddress).ticks(nextTick);
+        (, int128 liquidityNet, , ) = IKyberPool(poolAddress).ticks(nextTick);
         if (willUpTick) {
-            (,newNextTick) = IKyberPool(poolAddress).initializedTicks(nextTick);
+            (, newNextTick) = IKyberPool(poolAddress).initializedTicks(nextTick);
         } else {
-            (newNextTick,) = IKyberPool(poolAddress).initializedTicks(nextTick);
+            (newNextTick, ) = IKyberPool(poolAddress).initializedTicks(nextTick);
             liquidityNet = -liquidityNet;
         }
         newLiquidity = LiqDeltaMath.applyLiquidityDelta(
@@ -157,11 +142,7 @@ contract KyberQuoterCore {
         );
     }
 
-    function getNextInitializedTick(
-        address poolAddress, 
-        int24 tick
-    ) internal view returns (int24 next) {
-        (,next) = IKyberPool(poolAddress).initializedTicks(tick);
+    function getNextInitializedTick(address poolAddress, int24 tick) internal view returns (int24 next) {
+        (, next) = IKyberPool(poolAddress).initializedTicks(tick);
     }
-
 }

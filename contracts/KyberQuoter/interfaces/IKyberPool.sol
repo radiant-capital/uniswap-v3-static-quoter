@@ -2,9 +2,7 @@
 pragma solidity >=0.7.5;
 pragma abicoder v2;
 
-
 interface IKyberPool {
-
     /// @notice The fee to be charged for a swap in basis points
     /// @return The swap fee in basis points
     function swapFeeUnits() external view returns (uint24);
@@ -20,14 +18,7 @@ interface IKyberPool {
     /// @return baseL pool's base liquidity without reinvest liqudity
     /// @return reinvestL the liquidity is reinvested into the pool
     /// @return reinvestLLast last cached value of reinvestL, used for calculating reinvestment token qty
-    function getLiquidityState()
-        external
-        view
-        returns (
-            uint128 baseL,
-            uint128 reinvestL,
-            uint128 reinvestLLast
-        );
+    function getLiquidityState() external view returns (uint128 baseL, uint128 reinvestL, uint128 reinvestLLast);
 
     /// @notice Fetches the pool's prices, ticks and lock status
     /// @return sqrtP sqrt of current price: sqrt(token1/token0)
@@ -37,19 +28,16 @@ interface IKyberPool {
     function getPoolState()
         external
         view
-        returns (
-            uint160 sqrtP,
-            int24 currentTick,
-            int24 nearestCurrentTick,
-            bool locked
-        );
+        returns (uint160 sqrtP, int24 currentTick, int24 nearestCurrentTick, bool locked);
 
     function factory() external view returns (address);
 
     /// @return feeGrowthGlobal All-time fee growth per unit of liquidity of the pool
     function getFeeGrowthGlobal() external view returns (uint256);
 
-    function ticks(int24 tick)
+    function ticks(
+        int24 tick
+    )
         external
         view
         returns (
@@ -65,6 +53,9 @@ interface IKyberPool {
     function initializedTicks(int24 tick) external view returns (int24 previous, int24 next);
 
     function totalSupply() external view returns (uint256);
-    function getSecondsPerLiquidityData() external view returns (uint128 secondsPerLiquidityGlobal, uint32 lastUpdateTime);
 
+    function getSecondsPerLiquidityData()
+        external
+        view
+        returns (uint128 secondsPerLiquidityGlobal, uint32 lastUpdateTime);
 }

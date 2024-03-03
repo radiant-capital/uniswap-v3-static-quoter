@@ -39,12 +39,10 @@ struct StepComputations {
 }
 
 interface IUniV3likeQuoterCore {
-
     function quote(
         address poolAddress,
         bool zeroForOne,
         int256 amountSpecified,
         uint160 sqrtPriceLimitX96
     ) external view returns (int256 amount0, int256 amount1);
-
 }

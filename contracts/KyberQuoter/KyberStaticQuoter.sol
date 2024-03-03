@@ -19,20 +19,13 @@ contract KyberStaticQuoter is IUniswapV3StaticQuoter, KyberQuoterCore {
         factory = _factory;
     }
 
-    function getPool(
-        address tokenA,
-        address tokenB,
-        uint24 fee
-    ) private view returns (address) {
+    function getPool(address tokenA, address tokenB, uint24 fee) private view returns (address) {
         return IKyberFactory(factory).getPool(tokenA, tokenB, fee);
     }
 
-    function quoteExactInputSingle(QuoteExactInputSingleParams memory params)
-        public
-        view
-        override
-        returns (uint256 amountOut)
-    {
+    function quoteExactInputSingle(
+        QuoteExactInputSingleParams memory params
+    ) public view override returns (uint256 amountOut) {
         bool zeroForOne = params.tokenIn < params.tokenOut;
         address pool = getPool(params.tokenIn, params.tokenOut, params.fee);
         require(pool != address(0), 'Pool not found');
@@ -48,27 +41,21 @@ contract KyberStaticQuoter is IUniswapV3StaticQuoter, KyberQuoterCore {
         return zeroForOne ? uint256(-amount1) : uint256(-amount0);
     }
 
-    function quoteExactInput(bytes memory path, uint256 amountIn)
-        public
-        view
-        override
-        returns (uint256 amountOut)
-    {
+    function quoteExactInput(bytes memory path, uint256 amountIn) public view override returns (uint256 amountOut) {
         uint256 i = 0;
         while (true) {
             (address tokenIn, address tokenOut, uint24 fee) = path.decodeFirstPool();
 
             // the outputs of prior swaps become the inputs to subsequent ones
-            uint256 _amountOut =
-                quoteExactInputSingle(
-                    QuoteExactInputSingleParams({
-                        tokenIn: tokenIn,
-                        tokenOut: tokenOut,
-                        fee: fee,
-                        amountIn: amountIn,
-                        sqrtPriceLimitX96: 0
-                    })
-                );
+            uint256 _amountOut = quoteExactInputSingle(
+                QuoteExactInputSingleParams({
+                    tokenIn: tokenIn,
+                    tokenOut: tokenOut,
+                    fee: fee,
+                    amountIn: amountIn,
+                    sqrtPriceLimitX96: 0
+                })
+            );
 
             amountIn = _amountOut;
             i++;

@@ -23,18 +23,11 @@ contract AlgebraStaticQuoter is AlgebraQuoterCore {
         factory = _factory;
     }
 
-    function getPool(
-        address tokenA,
-        address tokenB
-    ) private view returns (address) {
+    function getPool(address tokenA, address tokenB) private view returns (address) {
         return IAlgebraFactory(factory).poolByPair(tokenA, tokenB);
     }
 
-    function quoteExactInputSingle(QuoteExactInputSingleParams memory params)
-        public
-        view
-        returns (uint256 amountOut)
-    {
+    function quoteExactInputSingle(QuoteExactInputSingleParams memory params) public view returns (uint256 amountOut) {
         bool zeroForOne = params.tokenIn < params.tokenOut;
         address pool = getPool(params.tokenIn, params.tokenOut);
         require(pool != address(0), 'Pool not found');
@@ -50,24 +43,19 @@ contract AlgebraStaticQuoter is AlgebraQuoterCore {
         return zeroForOne ? uint256(-amount1) : uint256(-amount0);
     }
 
-    function quoteExactInput(bytes memory path, uint256 amountIn)
-        public
-        view
-        returns (uint256 amountOut)
-    {
+    function quoteExactInput(bytes memory path, uint256 amountIn) public view returns (uint256 amountOut) {
         uint256 i = 0;
         while (true) {
             (address tokenIn, address tokenOut) = path.decodeFirstPool();
             // the outputs of prior swaps become the inputs to subsequent ones
-            uint256 _amountOut =
-                quoteExactInputSingle(
-                    QuoteExactInputSingleParams({
-                        tokenIn: tokenIn,
-                        tokenOut: tokenOut,
-                        amountIn: amountIn,
-                        sqrtPriceLimitX96: 0
-                    })
-                );
+            uint256 _amountOut = quoteExactInputSingle(
+                QuoteExactInputSingleParams({
+                    tokenIn: tokenIn,
+                    tokenOut: tokenOut,
+                    amountIn: amountIn,
+                    sqrtPriceLimitX96: 0
+                })
+            );
             amountIn = _amountOut;
             i++;
 
@@ -79,6 +67,4 @@ contract AlgebraStaticQuoter is AlgebraQuoterCore {
             }
         }
     }
-
 }
-

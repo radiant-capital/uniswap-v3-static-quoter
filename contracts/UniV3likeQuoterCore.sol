@@ -10,7 +10,6 @@ import '@uniswap/v3-core/contracts/libraries/FullMath.sol';
 import '@uniswap/v3-core/contracts/libraries/SwapMath.sol';
 import './IUniV3likeQuoterCore.sol';
 
-
 abstract contract UniV3likeQuoterCore {
     using LowGasSafeMath for int256;
     using SafeCast for uint256;
@@ -21,7 +20,7 @@ abstract contract UniV3likeQuoterCore {
         bool zeroForOne,
         int256 amountSpecified,
         uint160 sqrtPriceLimitX96
-    ) public virtual view returns (int256 amount0, int256 amount1) {
+    ) public view virtual returns (int256 amount0, int256 amount1) {
         require(amountSpecified != 0, 'amountSpecified cannot be zero');
         bool exactInput = amountSpecified > 0;
         (int24 tickSpacing, uint16 fee, SwapState memory state) = getInitState(
@@ -60,11 +59,10 @@ abstract contract UniV3likeQuoterCore {
             if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {
                 // if the tick is initialized, run the tick transition
                 if (step.initialized) {
-                    (,int128 liquidityNet,,,,,,) = getTicks(poolAddress, step.tickNext);
+                    (, int128 liquidityNet, , , , , , ) = getTicks(poolAddress, step.tickNext);
                     // if we're moving leftward, we interpret liquidityNet as the opposite sign
                     // safe because liquidityNet cannot be type(int128).min
-                    if (zeroForOne)
-                        liquidityNet = -liquidityNet;
+                    if (zeroForOne) liquidityNet = -liquidityNet;
                     state.liquidity = LiquidityMath.addDelta(state.liquidity, liquidityNet);
                 }
                 state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
@@ -100,7 +98,7 @@ abstract contract UniV3likeQuoterCore {
 
     function checkSqrtPriceLimitWithinAllowed(
         bool zeroForOne,
-        uint160 sqrtPriceLimit, 
+        uint160 sqrtPriceLimit,
         uint160 startPrice
     ) internal pure {
         bool withinAllowed = zeroForOne
@@ -110,17 +108,15 @@ abstract contract UniV3likeQuoterCore {
     }
 
     function nextInitializedTickAndPrice(
-        address pool, 
-        int24 tick, 
+        address pool,
+        int24 tick,
         int24 tickSpacing,
         bool zeroForOne
     ) internal view returns (int24 tickNext, bool initialized, uint160 sqrtPriceNextX96) {
         (tickNext, initialized) = nextInitializedTickWithinOneWord(pool, tick, tickSpacing, zeroForOne);
         // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds
-        if (tickNext < TickMath.MIN_TICK)
-            tickNext = TickMath.MIN_TICK;
-        else if (tickNext > TickMath.MAX_TICK)
-            tickNext = TickMath.MAX_TICK;
+        if (tickNext < TickMath.MIN_TICK) tickNext = TickMath.MIN_TICK;
+        else if (tickNext > TickMath.MAX_TICK) tickNext = TickMath.MAX_TICK;
         // get the price for the next tick
         sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(tickNext);
     }
@@ -130,33 +126,40 @@ abstract contract UniV3likeQuoterCore {
         uint160 sqrtPriceNextX96,
         uint160 sqrtPriceLimitX96
     ) internal pure returns (uint160) {
-        return (zeroForOne ? sqrtPriceNextX96<sqrtPriceLimitX96 : sqrtPriceNextX96>sqrtPriceLimitX96)
-            ? sqrtPriceLimitX96
-            : sqrtPriceNextX96;
+        return
+            (zeroForOne ? sqrtPriceNextX96 < sqrtPriceLimitX96 : sqrtPriceNextX96 > sqrtPriceLimitX96)
+                ? sqrtPriceLimitX96
+                : sqrtPriceNextX96;
     }
 
-    function getPoolGlobalState(address pool) internal virtual view returns (GlobalState memory);
-    
-    function getLiquidity(address pool) internal virtual view returns (uint128);
+    function getPoolGlobalState(address pool) internal view virtual returns (GlobalState memory);
 
-    function getTickSpacing(address pool) internal virtual view returns (int24);
-    
+    function getLiquidity(address pool) internal view virtual returns (uint128);
+
+    function getTickSpacing(address pool) internal view virtual returns (int24);
+
     function nextInitializedTickWithinOneWord(
         address poolAddress,
         int24 tick,
         int24 tickSpacing,
         bool zeroForOne
-    ) internal virtual view returns (int24 next, bool initialized);
-    
-    function getTicks(address pool, int24 tick) internal virtual view returns (
-        uint128 liquidityTotal,
-        int128 liquidityDelta,
-        uint256 outerFeeGrowth0Token,
-        uint256 outerFeeGrowth1Token,
-        int56 outerTickCumulative,
-        uint160 outerSecondsPerLiquidity,
-        uint32 outerSecondsSpent,
-        bool initialized
-    );
+    ) internal view virtual returns (int24 next, bool initialized);
 
+    function getTicks(
+        address pool,
+        int24 tick
+    )
+        internal
+        view
+        virtual
+        returns (
+            uint128 liquidityTotal,
+            int128 liquidityDelta,
+            uint256 outerFeeGrowth0Token,
+            uint256 outerFeeGrowth1Token,
+            int56 outerTickCumulative,
+            uint160 outerSecondsPerLiquidity,
+            uint32 outerSecondsSpent,
+            bool initialized
+        );
 }
